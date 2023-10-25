@@ -1,11 +1,15 @@
+import json
 from contextlib import asynccontextmanager
 from functools import partial
 from operator import itemgetter
+from typing import AsyncIterator
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from langchain.callbacks.tracers.log_stream import RunLogPatch
 from langchain.chat_models import ChatOpenAI
 from langchain.load import dumps, loads
 from langchain.memory import ConversationBufferMemory, RedisChatMessageHistory
@@ -256,3 +260,39 @@ def chat_stream(request: ChatRequest):
         memory.save_context(inputs=inputs, outputs={"output": response})
 
     return StreamingResponse(stream_response(), media_type="text/event-stream")
+
+
+async def transform_stream_for_client(
+    stream: AsyncIterator[RunLogPatch],
+) -> AsyncIterator[str]:
+    async for chunk in stream:
+        yield f"{json.dumps(jsonable_encoder(chunk))}\n"
+
+
+@app.post("/chat/stream-events")
+async def chat_stream(request: ChatRequest):
+    chat_history = RedisChatMessageHistory(
+        session_id=request.session_id,
+        url=settings.REDIS_URL,
+        key_prefix="message_store:",
+        ttl=60 * 60 * 24 * 7,  # 7 days
+    )
+
+    memory = ConversationBufferMemory(
+        chat_memory=chat_history,
+        return_messages=True,
+        memory_key="chat_history",
+    )
+    answer_chain_with_context = get_answer_chain(memory=memory)
+    inputs = {"question": request.message}
+
+    stream = answer_chain_with_context.astream_log(input=inputs)
+
+    return StreamingResponse(
+        transform_stream_for_client(stream), media_type="text/event-stream"
+    )
+
+
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
