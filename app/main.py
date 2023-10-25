@@ -322,7 +322,11 @@ async def chat_follow_up_suggestions(request: ChatFollowUpRequest):
         GENERATE_FOLLOW_UPS_PROMPT | llm | NumberedListOutputParser()
     ).with_config(run_name="GenerateFollowUps")
 
-    return generate_follow_ups_chain.invoke(input={"chat_history": memory.buffer})
+    response = generate_follow_ups_chain.invoke(input={"chat_history": memory.buffer})
+
+    return {
+        "follow_ups": response,
+    }
 
 
 @app.get("/")
