@@ -12,7 +12,6 @@ from fastapi.responses import StreamingResponse
 from langchain.callbacks.tracers.log_stream import RunLogPatch
 from langchain.chat_models import ChatOpenAI
 from langchain.load import dumps, loads
-from langchain.memory import ConversationBufferMemory, RedisChatMessageHistory
 from langchain.output_parsers import MarkdownListOutputParser
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.schema import BaseMemory, BaseRetriever, Document, StrOutputParser
@@ -21,6 +20,7 @@ from langchain.schema.runnable import RunnableLambda, RunnableMap
 from pydantic import BaseModel
 
 from app.config import get_settings
+from app.memory import get_memory
 from app.vectorstore import get_retriever
 
 load_dotenv()
@@ -216,18 +216,7 @@ def get_answer_chain(memory: BaseMemory):
 
 @app.post("/chat")
 def chat(request: ChatRequest):
-    chat_history = RedisChatMessageHistory(
-        session_id=request.session_id,
-        url=settings.REDIS_URL,
-        key_prefix="message_store:",
-        ttl=60 * 60 * 24 * 7,  # 7 days
-    )
-
-    memory = ConversationBufferMemory(
-        chat_memory=chat_history,
-        return_messages=True,
-        memory_key="chat_history",
-    )
+    memory = get_memory(session_id=request.session_id)
     answer_chain_with_context = get_answer_chain(memory=memory)
     inputs = {"question": request.message}
     response = answer_chain_with_context.invoke(input=inputs)
@@ -237,18 +226,7 @@ def chat(request: ChatRequest):
 
 @app.post("/chat/stream")
 def chat_stream(request: ChatRequest):
-    chat_history = RedisChatMessageHistory(
-        session_id=request.session_id,
-        url=settings.REDIS_URL,
-        key_prefix="message_store:",
-        ttl=60 * 60 * 24 * 7,  # 7 days
-    )
-
-    memory = ConversationBufferMemory(
-        chat_memory=chat_history,
-        return_messages=True,
-        memory_key="chat_history",
-    )
+    memory = get_memory(session_id=request.session_id)
     answer_chain_with_context = get_answer_chain(memory=memory)
     inputs = {"question": request.message}
 
@@ -299,18 +277,7 @@ async def transform_stream_for_client(
 
 @app.post("/chat/stream-events")
 async def chat_stream_events(request: ChatRequest):
-    chat_history = RedisChatMessageHistory(
-        session_id=request.session_id,
-        url=settings.REDIS_URL,
-        key_prefix="message_store:",
-        ttl=60 * 60 * 24 * 7,  # 7 days
-    )
-
-    memory = ConversationBufferMemory(
-        chat_memory=chat_history,
-        return_messages=True,
-        memory_key="chat_history",
-    )
+    memory = get_memory(session_id=request.session_id)
     answer_chain_with_context = get_answer_chain(memory=memory)
     inputs = {"question": request.message}
 
