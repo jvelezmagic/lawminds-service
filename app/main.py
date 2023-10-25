@@ -166,9 +166,9 @@ def create_retriever_chain(
     ).with_config(run_name="FindRelevantDocuments")
 
 
-def get_answer_chain(memory: BaseMemory):
+def get_answer_chain(memory: BaseMemory, llm: BaseLanguageModel):
     retriever_chain = create_retriever_chain(
-        llm=ChatOpenAI(temperature=0),
+        llm=llm,
         retriever=get_retriever(),
     )
 
@@ -187,9 +187,9 @@ def get_answer_chain(memory: BaseMemory):
         }
     ).with_config(run_name="RetrieveContext")
 
-    response_synthesizer = (
-        RESPONSE_PROMPT | ChatOpenAI(temperature=0) | StrOutputParser()
-    ).with_config(run_name="GenerateResponse")
+    response_synthesizer = (RESPONSE_PROMPT | llm | StrOutputParser()).with_config(
+        run_name="GenerateResponse"
+    )
 
     answer_chain_with_context = (
         RunnableMap(
@@ -216,8 +216,9 @@ def get_answer_chain(memory: BaseMemory):
 
 @app.post("/chat")
 def chat(request: ChatRequest):
-    memory = get_memory(session_id=request.session_id)
-    answer_chain_with_context = get_answer_chain(memory=memory)
+    llm = ChatOpenAI(temperature=0)
+    memory = get_memory(llm=llm, session_id=request.session_id)
+    answer_chain_with_context = get_answer_chain(llm=llm, memory=memory)
     inputs = {"question": request.message}
     response = answer_chain_with_context.invoke(input=inputs)
     memory.save_context(inputs=inputs, outputs={"output": response})
@@ -226,8 +227,9 @@ def chat(request: ChatRequest):
 
 @app.post("/chat/stream")
 def chat_stream(request: ChatRequest):
-    memory = get_memory(session_id=request.session_id)
-    answer_chain_with_context = get_answer_chain(memory=memory)
+    llm = ChatOpenAI(temperature=0)
+    memory = get_memory(llm=llm, session_id=request.session_id)
+    answer_chain_with_context = get_answer_chain(llm=llm, memory=memory)
     inputs = {"question": request.message}
 
     def stream_response():
@@ -277,8 +279,9 @@ async def transform_stream_for_client(
 
 @app.post("/chat/stream-events")
 async def chat_stream_events(request: ChatRequest):
-    memory = get_memory(session_id=request.session_id)
-    answer_chain_with_context = get_answer_chain(memory=memory)
+    llm = ChatOpenAI(temperature=0)
+    memory = get_memory(llm=llm, session_id=request.session_id)
+    answer_chain_with_context = get_answer_chain(llm=llm, memory=memory)
     inputs = {"question": request.message}
 
     stream = answer_chain_with_context.astream_log(input=inputs)
