@@ -202,7 +202,10 @@ def get_answer_chain(memory: BaseMemory, llm: BaseLanguageModel):
 
 @app.post("/chat")
 def chat(request: ChatRequest):
-    llm = ChatOpenAI(temperature=0)
+    llm = ChatOpenAI(
+        temperature=0,
+        model="gpt-3.5-turbo-16k",
+    )
     memory = get_memory(llm=llm, session_id=request.session_id)
     answer_chain_with_context = get_answer_chain(llm=llm, memory=memory)
     inputs = {"question": request.message}
@@ -213,7 +216,10 @@ def chat(request: ChatRequest):
 
 @app.post("/chat/stream")
 def chat_stream(request: ChatRequest):
-    llm = ChatOpenAI(temperature=0)
+    llm = ChatOpenAI(
+        temperature=0,
+        model="gpt-3.5-turbo-16k",
+    )
     memory = get_memory(llm=llm, session_id=request.session_id)
     answer_chain_with_context = get_answer_chain(llm=llm, memory=memory)
     inputs = {"question": request.message}
@@ -265,7 +271,10 @@ async def transform_stream_for_client(
 
 @app.post("/chat/stream-events")
 async def chat_stream_events(request: ChatRequest):
-    llm = ChatOpenAI(temperature=0)
+    llm = ChatOpenAI(
+        temperature=0,
+        model="gpt-3.5-turbo-16k",
+    )
     memory = get_memory(llm=llm, session_id=request.session_id)
     answer_chain_with_context = get_answer_chain(llm=llm, memory=memory)
     inputs = {"question": request.message}
