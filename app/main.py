@@ -12,7 +12,7 @@ from fastapi.responses import StreamingResponse
 from langchain.callbacks.tracers.log_stream import RunLogPatch
 from langchain.chat_models import ChatOpenAI
 from langchain.load import dumps, loads
-from langchain.output_parsers import MarkdownListOutputParser
+from langchain.output_parsers import MarkdownListOutputParser, NumberedListOutputParser
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder, PromptTemplate
 from langchain.schema import BaseMemory, BaseRetriever, Document, StrOutputParser
 from langchain.schema.language_model import BaseLanguageModel
@@ -29,6 +29,10 @@ load_dotenv()
 class ChatRequest(BaseModel):
     session_id: str
     message: str
+
+
+class ChatFollowUpRequest(BaseModel):
+    session_id: str
 
 
 settings = get_settings()
@@ -123,6 +127,21 @@ RESPONSE_PROMPT = ChatPromptTemplate.from_messages(
         MessagesPlaceholder(variable_name="chat_history"),
         ("human", "{question}"),
     ]
+)
+
+GENERATE_FOLLOW_UPS_TEMPLATE = """\
+Generate 5 follow-up questions that are relevant to the given conversation. \
+Each question should be self-contained and separated by a new line. \
+Output the questions as a numbered markdown list.
+
+Chat History:
+```
+{chat_history}
+```
+Generated Follow Up Questions:"""
+
+GENERATE_FOLLOW_UPS_PROMPT = PromptTemplate.from_template(
+    GENERATE_FOLLOW_UPS_TEMPLATE,
 )
 
 
@@ -285,6 +304,25 @@ async def chat_stream_events(request: ChatRequest):
         transform_stream_for_client(stream, memory=memory),
         media_type="text/event-stream",
     )
+
+
+@app.post("/chat/follow-up-suggestions")
+async def chat_follow_up_suggestions(request: ChatFollowUpRequest):
+    llm = ChatOpenAI(
+        temperature=0,
+        model="gpt-3.5-turbo-16k",
+    )
+    memory = get_memory(
+        llm=llm,
+        session_id=request.session_id,
+        return_messages=False,
+    )
+
+    generate_follow_ups_chain = (
+        GENERATE_FOLLOW_UPS_PROMPT | llm | NumberedListOutputParser()
+    ).with_config(run_name="GenerateFollowUps")
+
+    return generate_follow_ups_chain.invoke(input={"chat_history": memory.buffer})
 
 
 @app.get("/")
