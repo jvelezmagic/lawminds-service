@@ -266,7 +266,13 @@ async def transform_stream_for_client(
     stream: AsyncIterator[RunLogPatch],
 ) -> AsyncIterator[str]:
     async for chunk in stream:
-        yield f"{json.dumps(jsonable_encoder(chunk))}\n"
+        for c in chunk.ops:
+            if c.get("path") in (
+                "/logs/GenerateQueries/final_output",
+                "/logs/FindRelevantDocuments/final_output",
+                "/logs/ChatOpenAI:2/streamed_output_str/-",
+            ):
+                yield f"{json.dumps(jsonable_encoder(chunk))}\n"
 
 
 @app.post("/chat/stream-events")
