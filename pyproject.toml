@@ -2,7 +2,7 @@
 name = "lawminds-service"
 version = "0.1.0"
 description = ""
-authors = ["Jesús Vélez Santiago <>"]
+authors = ["Jesús Vélez Santiago <test@gmail.com>"]
 packages = [{ include = "app", from = "." }]
 readme = "README.md"
 
