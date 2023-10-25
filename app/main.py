@@ -264,7 +264,9 @@ def chat_stream(request: ChatRequest):
 
 async def transform_stream_for_client(
     stream: AsyncIterator[RunLogPatch],
+    memory: BaseMemory,
 ) -> AsyncIterator[str]:
+    inputs_and_outputs: dict[str, dict[str, str]] = {}
     async for chunk in stream:
         for c in chunk.ops:
             if c.get("path") in (
@@ -273,6 +275,26 @@ async def transform_stream_for_client(
                 "/logs/ChatOpenAI:2/streamed_output_str/-",
             ):
                 yield f"{json.dumps(jsonable_encoder(chunk))}\n"
+
+            if c.get("path") == "/logs/GetQuestion/final_output":
+                print(c)
+                inputs_and_outputs["input"] = {
+                    "question": c.get("value", {}).get("output")
+                }
+            if c.get("path") == "/final_output":
+                print(c)
+                inputs_and_outputs["output"] = {
+                    "output": c.get("value", {}).get("output")
+                }
+
+    if (
+        inputs_and_outputs.get("input", None) is not None
+        and inputs_and_outputs.get("output", None) is not None
+    ):
+        memory.save_context(
+            inputs=inputs_and_outputs["input"],
+            outputs=inputs_and_outputs["output"],
+        )
 
 
 @app.post("/chat/stream-events")
@@ -295,7 +317,8 @@ async def chat_stream(request: ChatRequest):
     stream = answer_chain_with_context.astream_log(input=inputs)
 
     return StreamingResponse(
-        transform_stream_for_client(stream), media_type="text/event-stream"
+        transform_stream_for_client(stream, memory=memory),
+        media_type="text/event-stream",
     )
 
 
