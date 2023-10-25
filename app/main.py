@@ -13,7 +13,7 @@ from langchain.callbacks.tracers.log_stream import RunLogPatch
 from langchain.chat_models import ChatOpenAI
 from langchain.load import dumps, loads
 from langchain.output_parsers import MarkdownListOutputParser
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder, PromptTemplate
 from langchain.schema import BaseMemory, BaseRetriever, Document, StrOutputParser
 from langchain.schema.language_model import BaseLanguageModel
 from langchain.schema.runnable import RunnableLambda, RunnableMap
@@ -103,14 +103,15 @@ generate a deeper understanding of the question. Each query should be \
 separated by a new line. Generated queries should be self-contained, \
 meaning they should not require any context to be able to understand the \
 query. Output should be a markdown list of queries.
-Maximum of 4 queries."""
+Maximum of 4 queries.
 
-GENERATE_QUERIES_PROMPT = ChatPromptTemplate.from_messages(
-    messages=[
-        ("system", GENERATE_QUERIES_TEMPLATE),
-        MessagesPlaceholder(variable_name="chat_history"),
-        ("human", "Follow Up Input: {question}"),
-    ]
+Chat History:
+{chat_history}
+Follow Up Input: {question}
+Generated Queries:"""
+
+GENERATE_QUERIES_PROMPT = PromptTemplate.from_template(
+    GENERATE_QUERIES_TEMPLATE,
 )
 
 RESPONSE_TEMPLATE = """\
