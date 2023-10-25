@@ -298,7 +298,7 @@ async def transform_stream_for_client(
 
 
 @app.post("/chat/stream-events")
-async def chat_stream(request: ChatRequest):
+async def chat_stream_events(request: ChatRequest):
     chat_history = RedisChatMessageHistory(
         session_id=request.session_id,
         url=settings.REDIS_URL,
