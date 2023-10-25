@@ -84,26 +84,11 @@ def format_docs(docs: list[Document]) -> str:
     return "\n".join(formatted_docs)
 
 
-REPHRASE_TEMPLATE = """\
-Given the following conversation and a follow up question, rephrase the follow up \
-question to be a standalone question.
-
-Chat History:
-{chat_history}
-Follow Up Input: {question}
-Standalone Question:"""
-
-
 GENERATE_QUERIES_TEMPLATE = """\
-You are a helpful assistant that generates multiple search queries based \
-on a given chat history and a follow up question. Your goal is to generate \
-queries that are related to the follow up question but create a more \
-diverse set of queries to be able to retrieve more relevant documents to \
-generate a deeper understanding of the question. Each query should be \
-separated by a new line. Generated queries should be self-contained, \
-meaning they should not require any context to be able to understand the \
-query. Output should be a markdown list of queries.
-Maximum of 4 queries.
+Generate a diverse set of search queries related to a follow-up question. \
+Each query should be self-contained and separated by a new line. \
+Output the queries as a markdown list. \
+Limit the number of queries to a maximum of 4.
 
 Chat History:
 {chat_history}
