@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "lawminds-service"
+version = "0.1.0"
+description = ""
+authors = ["Jesús Vélez Santiago <>"]
+packages = [{ include = "app", from = "." }]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+langchain = "^0.0.321"
+openai = "^0.28.1"
+ai21 = "^1.2.8"
+fastapi = "^0.104.0"
+uvicorn = { extras = ["standard"], version = "^0.23.2" }
+weaviate-client = "^3.24.2"
+pydantic-settings = "^2.0.3"
+pydantic = "^2.4.2"
+psycopg2 = "^2.9.9"
+tiktoken = "^0.5.1"
+chromadb = "^0.4.14"
+pdfplumber = "^0.10.2"
+redis = "^5.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
